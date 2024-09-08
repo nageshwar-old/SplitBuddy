@@ -23,6 +23,9 @@ target 'SplitBuddy' do
     :app_path => "#{Pod::Config.instance.installation_root}/.."
   )
 
+  # Add this line to include react-native-vector-icons
+  pod 'RNVectorIcons', :path => '../node_modules/react-native-vector-icons'
+
   target 'SplitBuddyTests' do
     inherit! :complete
     # Pods for testing
