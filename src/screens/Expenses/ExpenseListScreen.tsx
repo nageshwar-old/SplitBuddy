@@ -43,16 +43,16 @@ const ExpenseListScreen: React.FC = () => {
     return group ? group.name : 'No Group';
   };
 
-  // Function to get the category label by ID
+  // Function to get the category label by ID, default to "N/A"
   const getCategoryLabel = (categoryId: string) => {
     const category = availableCategoriesList.find((cat) => cat.id === categoryId);
-    return category ? category.name : 'Unknown Category';
+    return category ? category.name : 'N/A'; // Shortened fallback
   };
 
-  // Function to get the payment method label by ID
+  // Function to get the payment method label by ID, default to "N/A"
   const getPaymentMethodLabel = (paymentMethodId: string) => {
     const paymentMethod = availablePaymentMethodsList.find((method) => method.id === paymentMethodId);
-    return paymentMethod ? paymentMethod.name : 'Unknown Payment Method';
+    return paymentMethod ? paymentMethod.name : 'N/A'; // Shortened fallback
   };
 
   const handleDelete = (expenseId: string) => {
@@ -101,6 +101,7 @@ const ExpenseListScreen: React.FC = () => {
             paymentMethod={getPaymentMethodLabel(item.paymentMethod)} // Get the payment method label
             group={getGroupName(item.group)}
             date={item.date}
+            addedBy={item.addedBy} // Assuming addedBy is a part of item
             onEdit={() => navigation.navigate('EditExpense', { expenseId: item.id })}
             onDelete={() => handleDelete(item.id)}
           />

@@ -4,14 +4,14 @@ import Input from '@components/Input';
 import Button from '@components/Button';
 import MyDatePicker from '@components/MyDatePicker';
 import { generateUUID, categories as availableCategoriesList, paymentMethods as availablePaymentMethodsList } from '@utils/common';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState } from '@store/store'; // Assuming you have access to user state in the store
 import { addExpense } from '@store/expenseSlice';
-import { showToast } from '@store/toastSlice';
+import { showToast } from '@store/toastSlice'; // Use the Redux action for Snackbar
 import { SettingsService } from '@services/settingsService';
-import { ExpenseService } from '@services/expenseService';
+import { Expense, ExpenseService } from '@services/expenseService';
 import { useFocusEffect } from '@react-navigation/native';
 import MultiSelect from '@components/MultiSelect';
-import { Snackbar } from 'react-native-paper';
 
 const AddExpenseScreen: React.FC = () => {
   const [amount, setAmount] = useState<string>('');
@@ -23,29 +23,33 @@ const AddExpenseScreen: React.FC = () => {
   const [availableGroups, setAvailableGroups] = useState<{ id: string; name: string }[]>([]);
   const [availableCategories, setAvailableCategories] = useState<{ id: string; name: string }[]>([]);
   const [availablePaymentMethods, setAvailablePaymentMethods] = useState<{ id: string; name: string }[]>([]);
-  const [feedbackMessage, setFeedbackMessage] = useState<string>('');
-  const [isSnackbarVisible, setIsSnackbarVisible] = useState<boolean>(false);
-  const [snackbarSuccess, setSnackbarSuccess] = useState<boolean>(true);
+
   const dispatch = useDispatch();
 
+  // Access the current user from Redux state
+  const user = useSelector((state: RootState) => state.auth.user); // Assuming user data is stored in auth slice
+
   // Load available groups
-  useEffect(() => {
-    const loadGroups = async () => {
-      try {
-        const groups = await ExpenseService.getGroups();
-        const groupList = groups.map(group => ({ id: group.id, name: group.name }));
-        setAvailableGroups(groupList);
+  const loadGroups = async () => {
+    try {
+      const groups = await ExpenseService.getGroups();
+      const groupList = groups.map(group => ({ id: group.id, name: group.name }));
+      setAvailableGroups(groupList);
 
-        if (groupList.length > 0) {
-          setGroup([groupList[0].id]);
-        }
-      } catch (error) {
-        dispatch(showToast({ message: 'Failed to load groups', type: 'error' }));
+      if (groupList.length > 0) {
+        setGroup([groupList[0].id]);
       }
-    };
+    } catch (error) {
+      // Show error snackbar only
+      dispatch(showToast({ message: 'Failed to load groups', type: 'error' }));
+    }
+  };
 
-    loadGroups();
-  }, [dispatch]);
+  useFocusEffect(
+    useCallback(() => {
+      loadGroups();  // Refetch groups every time the screen is focused
+    }, [])
+  );
 
   useFocusEffect(
     useCallback(() => {
@@ -65,6 +69,7 @@ const AddExpenseScreen: React.FC = () => {
 
           setAvailablePaymentMethods(paymentMethodsList);
         } catch (error) {
+          // Show error snackbar for settings loading failure
           dispatch(showToast({ message: 'Failed to load settings', type: 'error' }));
         }
       };
@@ -75,7 +80,7 @@ const AddExpenseScreen: React.FC = () => {
 
   const handleAddExpense = () => {
     if (!amount || category.length === 0 || !description || paymentMethod.length === 0 || group.length === 0) {
-      showFeedback('Please fill out all fields', false);
+      dispatch(showToast({ message: 'Please fill out all fields', type: 'error' }));
       return;
     }
 
@@ -89,12 +94,14 @@ const AddExpenseScreen: React.FC = () => {
       date: (selectedDate || new Date()).toISOString(),
       paymentMethod: paymentMethod[0],
       group: group[0],
+      addedBy: user ? user.name : 'Unknown', // Set the addedBy field with the current user's name
     };
 
     try {
       dispatch(addExpense(newExpense));
-      showFeedback('Expense added successfully', true);
+      dispatch(showToast({ message: 'Expense added successfully', type: 'success' }));
 
+      // Clear fields after successful addition
       setAmount('');
       setCategory([]);
       setDescription('');
@@ -102,7 +109,7 @@ const AddExpenseScreen: React.FC = () => {
       setPaymentMethod([]);
       setGroup(availableGroups.length > 0 ? [availableGroups[0].id] : []);
     } catch (error) {
-      showFeedback('Failed to add expense', false);
+      dispatch(showToast({ message: 'Failed to add expense', type: 'error' }));
     }
   };
 
@@ -112,16 +119,6 @@ const AddExpenseScreen: React.FC = () => {
 
   const handleDateCancel = () => {
     console.log('Date selection canceled');
-  };
-
-  const showFeedback = (message: string, success: boolean) => {
-    setFeedbackMessage(message);
-    setSnackbarSuccess(success);
-    setIsSnackbarVisible(true);
-  };
-
-  const handleSnackbarDismiss = () => {
-    setIsSnackbarVisible(false);
   };
 
   return (
@@ -177,15 +174,6 @@ const AddExpenseScreen: React.FC = () => {
       <Button onPress={handleAddExpense}>
         Add Expense
       </Button>
-
-      <Snackbar
-        visible={isSnackbarVisible}
-        onDismiss={handleSnackbarDismiss}
-        duration={3000}
-        style={{ backgroundColor: snackbarSuccess ? '#4CAF50' : '#F44336' }}
-      >
-        {feedbackMessage}
-      </Snackbar>
     </ScrollView>
   );
 };

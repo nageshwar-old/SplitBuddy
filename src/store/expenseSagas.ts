@@ -1,6 +1,6 @@
 import { call, put, takeEvery } from 'redux-saga/effects';
 import { PayloadAction } from '@reduxjs/toolkit';
-import { ExpenseService, Group } from '@services/expenseService';
+import { Expense, ExpenseService, Group } from '@services/expenseService';
 import {
     fetchExpenses,
     fetchExpensesSuccess,

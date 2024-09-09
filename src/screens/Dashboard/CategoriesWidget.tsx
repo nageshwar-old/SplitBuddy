@@ -8,12 +8,12 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 interface CategoriesWidgetProps {
     expenses: Expense[];
-    categories: { id: string; name: string }[]; // Array of categories with id and name
+    categories?: { id: string; name: string }[]; // Array of categories with id and name, optional
 }
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Categories'>;
 
-const CategoriesWidget: React.FC<CategoriesWidgetProps> = ({ expenses, categories }) => {
+const CategoriesWidget: React.FC<CategoriesWidgetProps> = ({ expenses, categories = [] }) => {
     const navigation = useNavigation<NavigationProp>();
 
     // Reduce expenses into categories array

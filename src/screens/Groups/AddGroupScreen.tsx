@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ActivityIndicator } from 'react-native';
-import { Button, Snackbar } from 'react-native-paper';
+import { Button, Snackbar, Checkbox } from 'react-native-paper'; // Import Checkbox from react-native-paper
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { generateUUID, currencies } from '@utils/common'; // Import currency list
@@ -19,6 +19,9 @@ const AddGroupScreen: React.FC = () => {
     const [description, setDescription] = useState('');
     const [snackbarVisible, setSnackbarVisible] = useState(false); // Snackbar visibility
     const [snackbarMessage, setSnackbarMessage] = useState(''); // Snackbar message
+    const [addUser, setAddUser] = useState(false); // Checkbox state for adding user
+    const [userEmail, setUserEmail] = useState(''); // State for user email input
+
     const dispatch = useDispatch();
     const navigation = useNavigation<AddGroupScreenNavigationProp>();
 
@@ -56,11 +59,19 @@ const AddGroupScreen: React.FC = () => {
             return;
         }
 
+        // Optional email validation if user is added
+        if (addUser && !userEmail) {
+            setSnackbarMessage('Please provide a user email or uncheck the Add User option');
+            setSnackbarVisible(true);
+            return;
+        }
+
         const newGroup = {
             id: generateUUID(),
             name: groupName,
             currency: currency[0], // Since it's a single select, we take the first item
             description,
+            users: addUser ? [{ email: userEmail }] : [], // Add user by email if checkbox is checked
         };
 
         // Dispatch addGroup action to Redux
@@ -70,6 +81,8 @@ const AddGroupScreen: React.FC = () => {
         setGroupName('');
         setCurrency([]);
         setDescription('');
+        setUserEmail('');
+        setAddUser(false); // Reset the checkbox
     };
 
     return (
@@ -99,6 +112,27 @@ const AddGroupScreen: React.FC = () => {
                 multiline={true}
                 style={styles.input}
             />
+
+            {/* Add User Option */}
+            <View style={styles.checkboxContainer}>
+                <Checkbox
+                    status={addUser ? 'checked' : 'unchecked'}
+                    onPress={() => setAddUser(!addUser)}
+                    color="#6200EE"
+                />
+                <Button onPress={() => setAddUser(!addUser)} mode="text">Add User by Email</Button>
+            </View>
+
+            {/* Show email input only if Add User is checked */}
+            {addUser && (
+                <Input
+                    placeholder="User Email"
+                    value={userEmail}
+                    onChangeText={setUserEmail}
+                    keyboardType="email-address"
+                    style={styles.input}
+                />
+            )}
 
             {loading ? (
                 <ActivityIndicator size="large" color="#6200EE" style={styles.loader} />
@@ -133,6 +167,11 @@ const styles = StyleSheet.create({
     },
     loader: {
         marginTop: 20,
+    },
+    checkboxContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 16,
     },
 });
 

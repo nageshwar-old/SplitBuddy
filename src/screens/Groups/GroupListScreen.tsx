@@ -60,7 +60,7 @@ const GroupListScreen: React.FC = () => {
                     <Text style={styles.groupName}>{item.name}</Text>
                     <IconButton
                         icon="delete"
-                        iconColor="red"
+                        iconColor="#333"
                         size={24}
                         onPress={() => handleDeleteGroup(item.id)} // Call the delete function when pressed
                     />

@@ -8,8 +8,9 @@ interface ExpenseCardProps {
     category: string;
     description: string;
     paymentMethod: string;
-    group: string; // Group name
-    date: string; // Date of the expense
+    group: string;
+    date: string;
+    addedBy: string; // New prop for the user who added the expense
     onEdit: () => void;
     onDelete: () => void;
 }
@@ -21,10 +22,11 @@ const ExpenseCard: React.FC<ExpenseCardProps> = ({
     paymentMethod,
     group,
     date,
+    addedBy, // New prop destructured
     onEdit,
     onDelete,
 }) => {
-    const formattedDuration = moment(date).fromNow(); // Use Moment.js to get duration
+    const formattedDuration = moment(date).fromNow();
 
     // Convert payment method to uppercase and remove special characters
     const formattedPaymentMethod = paymentMethod.replace(/[^a-zA-Z0-9\s]/g, ' ').toUpperCase();
@@ -33,18 +35,28 @@ const ExpenseCard: React.FC<ExpenseCardProps> = ({
         <View style={styles.card}>
             {/* Top-right buttons for edit and delete */}
             <View style={styles.actionButtons}>
-                <IconButton icon="pencil-outline" size={20} onPress={onEdit} />
-                <IconButton icon="delete-outline" size={20} onPress={onDelete} />
+                <IconButton
+                    icon="pencil-outline"
+                    size={22}
+                    style={styles.iconButton}
+                    onPress={onEdit}
+                />
+                <IconButton
+                    icon="delete-outline"
+                    size={22}
+                    style={styles.iconButton}
+                    onPress={onDelete}
+                />
             </View>
 
             {/* Expense Details */}
             <View style={styles.cardContent}>
-                <View style={styles.leftDetails}>
-                    <Text style={styles.category}>{category}</Text>
-                    <Text style={styles.description}>{description}</Text>
-                    <Text style={styles.group}>{group}</Text>
-                    <Text style={styles.duration}>Added {formattedDuration}</Text>
-                </View>
+                <Text style={styles.description}>{description}</Text>
+                <Text style={styles.duration}>{formattedDuration}</Text>
+                <Text style={styles.label}>Category: <Text style={styles.value}>{category}</Text></Text>
+                <Text style={styles.label}>Group: <Text style={styles.value}>{group}</Text></Text>
+                {/* New "Added by" label */}
+                <Text style={styles.label}>Added by: <Text style={styles.value}>{addedBy}</Text></Text>
             </View>
 
             {/* Footer with payment method and amount */}
@@ -59,68 +71,67 @@ const ExpenseCard: React.FC<ExpenseCardProps> = ({
 const styles = StyleSheet.create({
     card: {
         backgroundColor: '#fff',
-        borderRadius: 10,
-        padding: 15,
-        marginBottom: 12,
+        borderRadius: 12,
+        padding: 16,
+        marginBottom: 16,
         shadowColor: '#000',
         shadowOpacity: 0.1,
         shadowOffset: { width: 0, height: 2 },
-        shadowRadius: 8,
-        elevation: 3,
+        shadowRadius: 6,
+        elevation: 2,
         position: 'relative',
-    },
-    cardContent: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
     },
     actionButtons: {
         position: 'absolute',
-        top: 5,
-        right: 5,
+        top: 8,
+        right: 8,
         flexDirection: 'row',
     },
-    leftDetails: {
-        flex: 1,
+    iconButton: {
+        marginHorizontal: 4,
+    },
+    cardContent: {
+        marginBottom: 10,
+    },
+    description: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#333',
+        marginBottom: 4,
+    },
+    duration: {
+        fontSize: 14,
+        color: '#777',
+        marginBottom: 6,
+    },
+    label: {
+        fontSize: 14,
+        color: '#888',
+        marginBottom: 2,
+        fontWeight: '500',
+    },
+    value: {
+        fontSize: 14,
+        color: '#333',
     },
     footer: {
-        marginTop: 10,
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'flex-end',
+        alignItems: 'center',
         borderTopWidth: 1,
         borderTopColor: '#EAEAEA',
         paddingTop: 10,
+        marginTop: 10,
     },
     amount: {
-        fontSize: 22,
+        fontSize: 18,
         fontWeight: 'bold',
         color: '#6200EE',
     },
     paymentMethod: {
-        fontSize: 16, // Increased font size for better readability
-        fontWeight: '600', // Bold for emphasis
+        fontSize: 14,
+        fontWeight: '600',
         color: '#4A4A4A',
-    },
-    category: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: '#264653',
-        marginBottom: 5,
-    },
-    description: {
-        fontSize: 14,
-        color: '#6A6A6A',
-        marginBottom: 5,
-    },
-    group: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: '#6A6A6A',
-        marginBottom: 5,
-    },
-    duration: {
-        fontSize: 12,
-        color: '#8D99AE',
     },
 });
 

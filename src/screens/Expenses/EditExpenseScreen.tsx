@@ -12,7 +12,7 @@ import { RootStackParamList } from '@navigation/AppNavigator'; // Your navigatio
 import { RootState } from '@store/store';
 import { Snackbar } from 'react-native-paper';
 import { SettingsService } from '@services/settingsService';
-import { generateUUID, categories as availableCategoriesList, paymentMethods as availablePaymentMethodsList } from '@utils/common';
+import { categories as availableCategoriesList, paymentMethods as availablePaymentMethodsList } from '@utils/common';
 
 // Define type for route params (expenseId of the expense to edit)
 type EditExpenseScreenRouteProp = RouteProp<RootStackParamList, 'EditExpense'>;
@@ -24,6 +24,7 @@ const EditExpenseScreen: React.FC = () => {
   const navigation = useNavigation();
 
   const { expenses, groups } = useSelector((state: RootState) => state.expenses);
+  const user = useSelector((state: RootState) => state.auth.user); // Assuming user data is stored in auth slice
 
   // Fetch the expense to be edited based on expenseId
   const expense = expenses.find(exp => exp.id === expenseId);
@@ -47,7 +48,7 @@ const EditExpenseScreen: React.FC = () => {
       dispatch(fetchExpenses());
     }
 
-    // Load available categories and payment methods (replace with actual settings fetching logic)
+    // Load available categories and payment methods
     const loadSettings = async () => {
       try {
         const visibleCategories = await SettingsService.getVisibleCategories();
@@ -85,6 +86,7 @@ const EditExpenseScreen: React.FC = () => {
       date: (selectedDate || new Date()).toISOString(),
       paymentMethod: paymentMethod[0],
       group: group[0],
+      addedBy: user ? user.name : expense?.addedBy || 'Unknown', // Preserve addedBy or set to current user
     };
 
     try {

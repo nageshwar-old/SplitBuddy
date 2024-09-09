@@ -103,60 +103,58 @@ const GroupStack = () => (
 );
 
 const AppNavigator: React.FC = () => (
-  <NavigationContainer>
-    <Tab.Navigator
-      screenOptions={({ route }) => ({
-        tabBarIcon: ({ color, size }) => {
-          let iconName = '';
-          if (route.name === 'Home') iconName = 'home';
-          else if (route.name === 'Expenses') iconName = 'file-document';
-          else if (route.name === 'Groups') iconName = 'account-group'; // Use 'account-group' for groups
-          else if (route.name === 'Settings') iconName = 'cog';
+  <Tab.Navigator
+    screenOptions={({ route }) => ({
+      tabBarIcon: ({ color, size }) => {
+        let iconName = '';
+        if (route.name === 'Home') iconName = 'home';
+        else if (route.name === 'Expenses') iconName = 'file-document';
+        else if (route.name === 'Groups') iconName = 'account-group'; // Use 'account-group' for groups
+        else if (route.name === 'Settings') iconName = 'cog';
 
-          return <Icon name={iconName} size={size} color={color} />;
-        },
-        tabBarActiveTintColor: '#6200EE',
-        tabBarInactiveTintColor: 'gray',
-        tabBarLabelStyle: {
-          fontSize: 12,
-          marginBottom: 5,
-        },
-        tabBarStyle: {
-          height: 60,
-          paddingTop: 5,
-          paddingBottom: 5,
-          borderTopWidth: 0,
-          elevation: 5,
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.1,
-          shadowRadius: 8,
-          backgroundColor: '#fff',
-        },
-      })}
-    >
-      <Tab.Screen
-        name="Home"
-        component={HomeStack}
-        options={{ headerShown: false }}
-      />
-      <Tab.Screen
-        name="Expenses"
-        component={ExpenseStack}
-        options={{ headerShown: false }}
-      />
-      <Tab.Screen
-        name="Groups"
-        component={GroupStack}
-        options={{ headerShown: false }}
-      />
-      <Tab.Screen
-        name="Settings"
-        component={SettingsScreen}
-        options={{ headerShown: false }}
-      />
-    </Tab.Navigator>
-  </NavigationContainer>
+        return <Icon name={iconName} size={size} color={color} />;
+      },
+      tabBarActiveTintColor: '#6200EE',
+      tabBarInactiveTintColor: 'gray',
+      tabBarLabelStyle: {
+        fontSize: 12,
+        marginBottom: 5,
+      },
+      tabBarStyle: {
+        height: 60,
+        paddingTop: 5,
+        paddingBottom: 5,
+        borderTopWidth: 0,
+        elevation: 5,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        backgroundColor: '#fff',
+      },
+    })}
+  >
+    <Tab.Screen
+      name="Home"
+      component={HomeStack}
+      options={{ headerShown: false }}
+    />
+    <Tab.Screen
+      name="Expenses"
+      component={ExpenseStack}
+      options={{ headerShown: false }}
+    />
+    <Tab.Screen
+      name="Groups"
+      component={GroupStack}
+      options={{ headerShown: false }}
+    />
+    <Tab.Screen
+      name="Settings"
+      component={SettingsScreen}
+      options={{ headerShown: false }}
+    />
+  </Tab.Navigator>
 );
 
 export default AppNavigator;

@@ -1,12 +1,15 @@
 import React from 'react';
-import { View, StyleSheet, FlatList, Text } from 'react-native';
+import { View, Text, FlatList, StyleSheet } from 'react-native';
 import { Avatar } from 'react-native-paper';
+import moment from 'moment'; // Import moment for duration calculation
 
 interface TransactionsWidgetProps {
-    expenses: Expense[]; // Define that expenses are an array of Expense
+    expenses: Expense[];
+    getCategoryName: (categoryId: string) => string;
+    getPaymentMethodName: (paymentMethodId: string) => string;
 }
 
-const TransactionsWidget: React.FC<TransactionsWidgetProps> = ({ expenses }) => {
+const TransactionsWidget: React.FC<TransactionsWidgetProps> = ({ expenses, getCategoryName, getPaymentMethodName }) => {
     return (
         <View>
             <View style={styles.sectionHeader}>
@@ -16,21 +19,24 @@ const TransactionsWidget: React.FC<TransactionsWidgetProps> = ({ expenses }) => 
 
             <FlatList
                 data={expenses}
-                renderItem={({ item }) => (
-                    <View style={styles.transactionItem}>
-                        <Avatar.Icon icon="receipt" size={48} style={styles.transactionIcon} />
-                        <View style={styles.transactionDetails}>
-                            <Text style={styles.transactionDescription}>{item.description}</Text>
-                            <Text style={styles.transactionCategory}>{item.category}</Text>
+                renderItem={({ item }) => {
+                    const duration = moment(item.date).fromNow(); // Calculate duration using moment
+
+                    return (
+                        <View style={styles.transactionItem}>
+                            <Avatar.Icon icon="receipt" size={48} style={styles.transactionIcon} />
+                            <View style={styles.transactionDetails}>
+                                <Text style={styles.transactionDescription}>{item.description}</Text>
+                                <Text style={styles.transactionCategory}>{getCategoryName(item.category)}</Text>
+                            </View>
+                            <View style={styles.transactionAmountContainer}>
+                                <Text style={styles.transactionTime}>{duration}</Text>
+                                <Text style={styles.transactionAmount}>₹{item.amount.toFixed(2)}</Text>
+                                <Text style={styles.transactionPaymentMethod}>{getPaymentMethodName(item.paymentMethod)}</Text>
+                            </View>
                         </View>
-                        <View style={styles.transactionAmountContainer}>
-                            <Text style={styles.transactionTime}>
-                                {new Date(item.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            </Text>
-                            <Text style={styles.transactionAmount}>₹{item.amount.toFixed(2)}</Text>
-                        </View>
-                    </View>
-                )}
+                    );
+                }}
                 keyExtractor={(item) => item.id}
                 contentContainerStyle={{ paddingBottom: 20 }}
             />
@@ -89,6 +95,10 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: 'bold',
         color: '#333',
+    },
+    transactionPaymentMethod: {
+        fontSize: 14,
+        color: '#757575',
     },
 });
 

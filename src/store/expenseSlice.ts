@@ -1,22 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-
-// Define Group and Expense interfaces
-interface Group {
-    id: string;
-    name: string;
-    currency: string;
-    description?: string;
-}
-
-interface Expense {
-    id: string;
-    amount: number;
-    category: string;
-    description: string;
-    date: string;
-    paymentMethod: string;
-    group: string;  // Add group field to expense
-}
+import { Expense, Group } from '@services/expenseService';
 
 // Define the state shape for expenses and groups
 interface ExpensesState {

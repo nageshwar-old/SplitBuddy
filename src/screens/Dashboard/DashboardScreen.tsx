@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { View, StyleSheet, Text } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchExpenses } from '@store/expenseSlice';
+import { categories, paymentMethods } from '@utils/common'; // Import categories and payment methods
 import ExpenseSummary from './ExpenseSummary';
 import CategoriesWidget from './CategoriesWidget';
 import { FlatList } from 'react-native';
@@ -10,13 +11,28 @@ import TransactionsWidget from './TransactionsWidget';
 const DashboardScreen: React.FC = () => {
   const dispatch = useDispatch();
 
-  // Get expenses and categories from the store
+  // Get expenses and user info from the store
   const expenses = useSelector((state: any) => state.expenses.expenses);
-  const categories = useSelector((state: any) => state.expenses.categories); // Assuming categories are in the store
+  const user = useSelector((state: any) => state.auth.user); // Get user details from auth state
 
   useEffect(() => {
-    dispatch(fetchExpenses());
+    dispatch(fetchExpenses()); // Fetch expenses when component mounts
   }, [dispatch]);
+
+  // Handle category mapping (for display purposes)
+  const getCategoryName = (categoryId: string) => {
+    const category = categories.find((cat) => cat.id === categoryId);
+    return category ? category.name : 'N/A'; // Simplified label for unknown category
+  };
+
+  // Handle payment method mapping (for display purposes)
+  const getPaymentMethodName = (paymentMethodId: string) => {
+    const paymentMethod = paymentMethods.find((method) => method.id === paymentMethodId);
+    return paymentMethod ? paymentMethod.name : 'N/A'; // Simplified label for unknown payment method
+  };
+
+  // Determine what to show as the username or name
+  const displayName = user?.name ? user.name : user?.username;
 
   // Dummy data to satisfy FlatList
   const dummyData = [{}];
@@ -29,16 +45,17 @@ const DashboardScreen: React.FC = () => {
       ListHeaderComponent={() => (
         <View style={styles.container}>
           <Text style={styles.greeting}>Good morning!</Text>
-          <Text style={styles.username}>User</Text>
+          <Text style={styles.username}>{displayName || 'User'}</Text>
 
-          {/* Balance Summary */}
           <ExpenseSummary expenses={expenses} />
 
-          {/* Categories Widget */}
           <CategoriesWidget expenses={expenses} categories={categories} />
 
-          {/* Transactions Widget */}
-          <TransactionsWidget expenses={expenses} />
+          <TransactionsWidget
+            expenses={expenses}
+            getCategoryName={getCategoryName}
+            getPaymentMethodName={getPaymentMethodName}
+          />
         </View>
       )}
     />
