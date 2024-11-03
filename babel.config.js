@@ -6,7 +6,9 @@ module.exports = {
       {
         root: ['./src'],  // Set the root directory (usually the src folder)
         alias: {
+          '@app': './src',
           '@assets': './src/assets',
+          '@config': './src/config',
           '@constants': './src/constants',
           '@components': './src/components',
           '@screens': './src/screens',
@@ -15,7 +17,9 @@ module.exports = {
           '@types': './src/types',
           '@hooks': './src/hooks',
           '@utils': './src/utils',
-          '@services': './src/services',
+          '@services': './src/store/services',
+          '@slices': './src/store/slices',
+          '@sagas': './src/store/sagas',
           '@store': './src/store',
         },
       },

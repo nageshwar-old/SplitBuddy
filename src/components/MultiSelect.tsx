@@ -1,18 +1,20 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView, TextInput, TouchableOpacity, Modal } from 'react-native';
-import { Checkbox, Button, Snackbar, Divider, IconButton, Text } from 'react-native-paper';
+import { Checkbox, Button, Divider, IconButton, Text } from 'react-native-paper';
 
 interface MultiSelectProps {
-    items: { id: string; name: string }[]; // Array of categories or other selectable items
-    selectedItems: string[]; // Array of currently selected item IDs
-    onSelectionChange: (selectedItems: string[]) => void; // Function to update selected items
-    title?: string; // Optional title for the multi-select modal
-    fieldLabel: string; // Label for the field
-    subLabel?: string; // Optional sub-label for additional context
-    maxDisplay?: number; // Maximum number of items to display before showing ellipsis
-    isSingleSelect?: boolean; // If true, the component will act as a single select
-    placeholder?: string; // Placeholder when no items are selected
-    showFeedback?: boolean; // If true, show feedback messages (default is true)
+    items: { id: string; name: string; data?: any; }[];
+    selectedItems: { id: string; name: string; data?: any; }[];
+    onSelectionChange: (selectedItems: { id: string; name: string; data?: any; }[]) => void;
+    title?: string;
+    fieldLabel: string;
+    subLabel?: string;
+    maxDisplay?: number;
+    isSingleSelect?: boolean;
+    placeholder?: string;
+    addButtonLabel?: string;
+    onAddPress?: () => void;
+    canSearch?: boolean;
 }
 
 const MultiSelect: React.FC<MultiSelectProps> = ({
@@ -22,70 +24,46 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
     title,
     fieldLabel,
     subLabel,
+    canSearch = false,
     maxDisplay = 2,
-    isSingleSelect = false, // Default to false for multi-select
-    placeholder, // Default placeholder text
-    showFeedback = true, // Default to true for showing feedback messages
+    isSingleSelect = false,
+    placeholder,
+    addButtonLabel = 'Add',
+    onAddPress,
 }) => {
-    const [localSelectedItems, setLocalSelectedItems] = useState<string[]>(selectedItems);
+    const [localSelectedItems, setLocalSelectedItems] = useState<{ id: string; name: string; data?: any; }[]>(selectedItems);
     const [searchTerm, setSearchTerm] = useState<string>('');
-    const [snackbarVisible, setSnackbarVisible] = useState(false);
-    const [snackbarMessage, setSnackbarMessage] = useState('');
-    const [isSuccess, setIsSuccess] = useState(true);
-    const [modalVisible, setModalVisible] = useState(false); // To toggle modal visibility
+    const [modalVisible, setModalVisible] = useState(false);
 
-    const handleToggleItem = (itemId: string) => {
+    const handleToggleItem = (item: { id: string; name: string; data?: any }) => {
         let updatedSelection;
+
         if (isSingleSelect) {
-            updatedSelection = [itemId]; // Only one item can be selected
+            updatedSelection = [item];
         } else {
-            updatedSelection = localSelectedItems.includes(itemId)
-                ? localSelectedItems.filter(id => id !== itemId)
-                : [...localSelectedItems, itemId];
+            const isSelected = localSelectedItems.some(selected => selected.id === item.id);
+            updatedSelection = isSelected
+                ? localSelectedItems.filter(selected => selected.id !== item.id)
+                : [...localSelectedItems, item];
         }
 
         setLocalSelectedItems(updatedSelection);
     };
 
     const handleApplySelection = () => {
-        if (localSelectedItems.length > 0) {
-            onSelectionChange(localSelectedItems);
-
-            if (showFeedback) {
-                showFeedbackMessage('Selection applied successfully!', true);
-            }
-
-            setModalVisible(false); // Close modal on success
-        } else {
-            if (showFeedback) {
-                showFeedbackMessage('No items selected. Please select at least one item.', false);
-            }
-        }
+        onSelectionChange(localSelectedItems);
+        setModalVisible(false);
     };
 
-    const showFeedbackMessage = (message: string, success: boolean) => {
-        setSnackbarMessage(message);
-        setIsSuccess(success);
-        setSnackbarVisible(true);
-    };
-
-    const handleSnackbarDismiss = () => {
-        setSnackbarVisible(false);
-    };
-
-    // Filter and show selected items on top
     const filteredItems = items.filter(item =>
         item.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     const selectedItemsOnTop = filteredItems
-        .filter(item => localSelectedItems.includes(item.id))
-        .concat(filteredItems.filter(item => !localSelectedItems.includes(item.id)));
+        .filter(item => localSelectedItems.some(selected => selected.id === item.id))
+        .concat(filteredItems.filter(item => !localSelectedItems.some(selected => selected.id === item.id)));
 
-    // Show selected items in the field with ellipsis if too many are selected
-    const selectedNames = items
-        .filter(item => localSelectedItems.includes(item.id))
-        .map(item => item.name);
+    const selectedNames = localSelectedItems.map(item => item.name);
 
     const displayNames = selectedNames.length > maxDisplay
         ? `${selectedNames.slice(0, maxDisplay).join(', ')}...`
@@ -93,14 +71,24 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
 
     return (
         <View>
-            <Text style={styles.fieldLabel}>{fieldLabel}</Text>
+            <View style={styles.labelContainer}>
+                <Text style={styles.fieldLabel}>{fieldLabel}</Text>
+                {onAddPress && (
+                    <Button
+                        mode="text"
+                        onPress={onAddPress}
+                        labelStyle={styles.addButtonLabel}
+                    >
+                        {addButtonLabel}
+                    </Button>
+                )}
+            </View>
             {subLabel ? <Text style={styles.subLabel}>{subLabel}</Text> : null}
             <TouchableOpacity onPress={() => setModalVisible(true)} style={styles.selectionField}>
                 <Text style={styles.fieldValue}>{displayNames || placeholder || "Select"}</Text>
                 <IconButton icon="chevron-down" size={20} />
             </TouchableOpacity>
 
-            {/* Modal for multi-select */}
             <Modal
                 visible={modalVisible}
                 animationType="slide"
@@ -110,27 +98,29 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalContainer}>
                         <View style={styles.modalHeader}>
-                            <IconButton icon="close" onPress={() => setModalVisible(false)} />
+                            <IconButton style={styles.closeButton} icon="close" onPress={() => setModalVisible(false)} />
                         </View>
 
-                        <TextInput
-                            style={styles.searchInput}
-                            placeholder="Search..."
-                            value={searchTerm}
-                            onChangeText={setSearchTerm}
-                        />
+                        {canSearch && (
+                            <TextInput
+                                style={styles.searchInput}
+                                placeholder="Search..."
+                                value={searchTerm}
+                                onChangeText={setSearchTerm}
+                            />
+                        )}
 
                         <ScrollView style={styles.scrollView}>
                             {selectedItemsOnTop.map(item => (
                                 <TouchableOpacity
                                     key={item.id}
                                     style={styles.itemRow}
-                                    onPress={() => handleToggleItem(item.id)}
+                                    onPress={() => handleToggleItem(item)}
                                 >
                                     <Text style={styles.itemName}>{item.name}</Text>
                                     <Checkbox
-                                        status={localSelectedItems.includes(item.id) ? 'checked' : 'unchecked'}
-                                        onPress={() => handleToggleItem(item.id)}
+                                        status={localSelectedItems.some(selected => selected.id === item.id) ? 'checked' : 'unchecked'}
+                                        onPress={() => handleToggleItem(item)}
                                         color="#6200EE"
                                     />
                                 </TouchableOpacity>
@@ -147,43 +137,41 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
                     </View>
                 </View>
             </Modal>
-
-            {/* Snackbar for feedback */}
-            {showFeedback && (
-                <Snackbar
-                    visible={snackbarVisible}
-                    onDismiss={handleSnackbarDismiss}
-                    duration={3000}
-                    style={{ backgroundColor: isSuccess ? '#4CAF50' : '#F44336' }}
-                >
-                    {snackbarMessage}
-                </Snackbar>
-            )}
         </View>
     );
 };
 
 const styles = StyleSheet.create({
-    selectionField: {
+    labelContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        padding: 5,
-        borderColor: '#333',
-        backgroundColor: '#fff',
-        borderWidth: 1,
-        borderRadius: 8,
-        marginBottom: 16,
+        marginBottom: 8,
     },
     fieldLabel: {
-        fontSize: 18,
-        color: '#444',
-        marginBottom: 4,
+        fontSize: 16,
+        color: '#666',
+    },
+    addButtonLabel: {
+        fontSize: 16,
+        color: '#6200EE',
     },
     subLabel: {
         fontSize: 14,
         color: '#aaa',
         marginBottom: 8,
+    },
+    selectionField: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        height: 50,
+        padding: 5,
+        borderColor: '#666',
+        backgroundColor: '#fff',
+        borderWidth: 1,
+        borderRadius: 8,
+        marginBottom: 16,
     },
     fieldValue: {
         flex: 1,
@@ -207,6 +195,13 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
+        padding: 20,
+        position: 'relative'
+    },
+    closeButton: {
+        position: 'absolute',
+        top: -15,
+        right: -15
     },
     title: {
         fontSize: 18,
@@ -244,6 +239,10 @@ const styles = StyleSheet.create({
     applyButton: {
         marginTop: 16,
         backgroundColor: '#6200EE',
+    },
+    addButton: {
+        marginTop: 8,
+        borderColor: '#6200EE',
     },
 });
 

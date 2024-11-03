@@ -1,169 +1,147 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ActivityIndicator } from 'react-native';
-import { Button, Snackbar, Checkbox } from 'react-native-paper'; // Import Checkbox from react-native-paper
+import { View, StyleSheet, ActivityIndicator, Text, ScrollView } from 'react-native';
+import { Button, Checkbox } from 'react-native-paper';
+import { useDispatch, useSelector } from 'react-redux';
+import MultiSelect from '@components/MultiSelect';
+import Input from '@components/Input';
+import { currencies } from '@app/constants';
+import { createGroupRequest, fetchGroupsRequest } from '@app/store/slices/groupSlice';
+import { fetchUsersRequest, fetchUsersWithFieldsRequest } from '@app/store/slices/userSlice';
+import { AppState } from '@store/store';
 import { useNavigation } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
-import { generateUUID, currencies } from '@utils/common'; // Import currency list
-import { useDispatch, useSelector } from 'react-redux'; // Import useSelector
-import { RootState } from '@store/store'; // Import RootState
-import { fetchGroups, addGroup } from '@store/expenseSlice'; // Import Redux actions
-import MultiSelect from '@components/MultiSelect'; // Import MultiSelect
-import Input from '@components/Input'; // Import the new Input component
-import { RootStackParamList } from '@navigation/AppNavigator';
-
-type AddGroupScreenNavigationProp = StackNavigationProp<RootStackParamList, 'AddGroup'>;
 
 const AddGroupScreen: React.FC = () => {
+    const navigation = useNavigation();
     const [groupName, setGroupName] = useState('');
-    const [currency, setCurrency] = useState<string[]>([]); // Single selection in array
-    const [description, setDescription] = useState('');
-    const [snackbarVisible, setSnackbarVisible] = useState(false); // Snackbar visibility
-    const [snackbarMessage, setSnackbarMessage] = useState(''); // Snackbar message
-    const [addUser, setAddUser] = useState(false); // Checkbox state for adding user
-    const [userEmail, setUserEmail] = useState(''); // State for user email input
+    const [currency, setCurrency] = useState<{ id: string; name: string; data?: any }[]>([]);
+    const [addUser, setAddUser] = useState(false);
+    const [userIds, setUserIds] = useState<{ id: string; name: string; data?: any }[]>([]);
 
     const dispatch = useDispatch();
-    const navigation = useNavigation<AddGroupScreenNavigationProp>();
+    const { groups, loading: groupsLoading } = useSelector((state: AppState) => state.group);
+    const { users, usersLoading } = useSelector((state: AppState) => state.user);
+    const profile = useSelector((state: AppState) => state.user.profile);
 
-    // Get Redux state for groups and loading/error state
-    const { groups, loading, error, success } = useSelector((state: RootState) => state.expenses);
-
-    // Fetch groups when the component mounts
+    // Fetch groups and users when component mounts
     useEffect(() => {
-        dispatch(fetchGroups());
+        dispatch(fetchGroupsRequest());
+        dispatch(fetchUsersRequest({ fields: ['id', 'firstName'] }));
     }, [dispatch]);
 
-    // Handle Snackbar for showing feedback based on success/error state
-    useEffect(() => {
-        if (error) {
-            setSnackbarMessage(error);
-            setSnackbarVisible(true);
-        }
-        if (success) {
-            setSnackbarMessage(success);
-            setSnackbarVisible(true);
-        }
-    }, [error, success]);
-
     const handleAddGroup = () => {
-        // Check for duplicate group names
-        if (groups.some(group => group.name.toLowerCase() === groupName.toLowerCase())) {
-            setSnackbarMessage('Group name already exists');
-            setSnackbarVisible(true);
+        const trimmedGroupName = groupName.trim();
+
+        if (groups.some(group => group.groupName.toLowerCase() === trimmedGroupName.toLowerCase())) {
+            console.warn('Group name already exists');
             return;
         }
 
-        if (!groupName || currency.length === 0) {
-            setSnackbarMessage('Please fill out the required fields');
-            setSnackbarVisible(true);
+        if (!trimmedGroupName || currency.length === 0) {
+            console.warn('Please fill out all required fields');
             return;
         }
 
-        // Optional email validation if user is added
-        if (addUser && !userEmail) {
-            setSnackbarMessage('Please provide a user email or uncheck the Add User option');
-            setSnackbarVisible(true);
+        if (addUser && userIds.length === 0) {
+            console.warn('Please provide user IDs or uncheck the Add User option');
             return;
         }
 
         const newGroup = {
-            id: generateUUID(),
-            name: groupName,
-            currency: currency[0], // Since it's a single select, we take the first item
-            description,
-            users: addUser ? [{ email: userEmail }] : [], // Add user by email if checkbox is checked
+            groupName: trimmedGroupName,
+            currency: currency[0]?.id || '',
+            userIds: userIds.map(user => user.id),
+            authorId: profile?.id,
         };
 
-        // Dispatch addGroup action to Redux
-        dispatch(addGroup(newGroup));
+        dispatch(createGroupRequest(newGroup));
 
-        // Clear the form fields after adding
         setGroupName('');
         setCurrency([]);
-        setDescription('');
-        setUserEmail('');
-        setAddUser(false); // Reset the checkbox
+        setUserIds([]);
+        setAddUser(false);
+        navigation.goBack();
     };
 
     return (
-        <View style={styles.container}>
-            <Input
-                placeholder="Group Name"
-                value={groupName}
-                onChangeText={setGroupName}
-                style={styles.input}
-            />
-
-            {/* Use MultiSelect for Single Currency Selection */}
-            <MultiSelect
-                items={currencies.map(currency => ({ id: currency.code, name: `${currency.name} (${currency.code})` }))}
-                selectedItems={currency}
-                onSelectionChange={setCurrency}
-                title="Select a Currency"
-                placeholder="Choose Currency"
-                fieldLabel="Currency"
-                isSingleSelect={true} // Enable single selection
-            />
-
-            <Input
-                placeholder="Description"
-                value={description}
-                onChangeText={setDescription}
-                multiline={true}
-                style={styles.input}
-            />
-
-            {/* Add User Option */}
-            <View style={styles.checkboxContainer}>
-                <Checkbox
-                    status={addUser ? 'checked' : 'unchecked'}
-                    onPress={() => setAddUser(!addUser)}
-                    color="#6200EE"
-                />
-                <Button onPress={() => setAddUser(!addUser)} mode="text">Add User by Email</Button>
-            </View>
-
-            {/* Show email input only if Add User is checked */}
-            {addUser && (
+        <ScrollView contentContainerStyle={styles.container}>
+            <View style={styles.formContainer}>
                 <Input
-                    placeholder="User Email"
-                    value={userEmail}
-                    onChangeText={setUserEmail}
-                    keyboardType="email-address"
+                    label="Group Name"
+                    placeholder="Group Name"
+                    value={groupName}
+                    onChangeText={setGroupName}
                     style={styles.input}
                 />
-            )}
 
-            {loading ? (
+                <MultiSelect
+                    items={currencies.map(currency => ({
+                        id: currency.code,
+                        name: `${currency.name} (${currency.code})`,
+                        data: currency
+                    }))}
+                    selectedItems={currency}
+                    onSelectionChange={setCurrency}
+                    title="Select a Currency"
+                    placeholder="Choose Currency"
+                    fieldLabel="Currency"
+                    isSingleSelect={true}
+                />
+
+                <View style={styles.checkboxContainer}>
+                    <Checkbox
+                        status={addUser ? 'checked' : 'unchecked'}
+                        onPress={() => setAddUser(!addUser)}
+                        color="#6200EE"
+                    />
+                    <Text style={styles.checkboxLabel}>Add Users</Text>
+                </View>
+
+                {addUser && (
+                    usersLoading ? (
+                        <ActivityIndicator size="small" color="#6200EE" />
+                    ) : (
+                        <MultiSelect
+                            items={users.map(user => ({
+                                id: user.id,
+                                name: user.firstName,
+                                data: user
+                            }))}
+                            selectedItems={userIds}
+                            onSelectionChange={setUserIds}
+                            title="Select Users"
+                            placeholder="Choose Users"
+                            fieldLabel="Users"
+                            isSingleSelect={false}
+                        />
+                    )
+                )}
+            </View>
+
+            {groupsLoading ? (
                 <ActivityIndicator size="large" color="#6200EE" style={styles.loader} />
             ) : (
                 <Button mode="contained" onPress={handleAddGroup} style={styles.button}>
                     Add Group
                 </Button>
             )}
-
-            {/* Snackbar for form validation feedback */}
-            <Snackbar
-                visible={snackbarVisible}
-                onDismiss={() => setSnackbarVisible(false)}
-                duration={3000}
-            >
-                {snackbarMessage}
-            </Snackbar>
-        </View>
+        </ScrollView>
     );
 };
 
 const styles = StyleSheet.create({
     container: {
-        flex: 1,
+        flexGrow: 1,
         padding: 20,
+    },
+    formContainer: {
+        flexGrow: 1,
     },
     input: {
         marginBottom: 16,
     },
     button: {
         marginTop: 20,
+        backgroundColor: '#6200EE',
     },
     loader: {
         marginTop: 20,
@@ -171,7 +149,12 @@ const styles = StyleSheet.create({
     checkboxContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 16,
+        marginVertical: 10,
+    },
+    checkboxLabel: {
+        fontSize: 16,
+        color: '#333',
+        marginLeft: 8,
     },
 });
 

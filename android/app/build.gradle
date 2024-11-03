@@ -33,6 +33,7 @@ android {
         versionCode 1
         versionName "1.0"
     }
+
     signingConfigs {
         debug {
             storeFile file('debug.keystore')
@@ -40,13 +41,21 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        release {
+            // Use environment variables for security
+            storeFile file('splitbuddy.keystore')
+            storePassword System.getenv("KEYSTORE_PASSWORD") ?: "splitbuddy"
+            keyAlias System.getenv("KEY_ALIAS") ?: "splitbuddy"
+            keyPassword System.getenv("KEY_PASSWORD") ?: "splitbuddy"
+        }
     }
+
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
         }
         release {
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.release
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
         }
@@ -54,7 +63,7 @@ android {
 }
 
 dependencies {
-    // React Native version is managed by React Native Gradle Plugin
+    // React Native version is managed by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
 
     if (enableHermes) {

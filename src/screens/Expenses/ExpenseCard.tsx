@@ -10,6 +10,7 @@ interface ExpenseCardProps {
     paymentMethod: string;
     group: string;
     date: string;
+    updatedDate: string;
     addedBy: string; // New prop for the user who added the expense
     onEdit: () => void;
     onDelete: () => void;
@@ -25,8 +26,9 @@ const ExpenseCard: React.FC<ExpenseCardProps> = ({
     addedBy, // New prop destructured
     onEdit,
     onDelete,
+    updatedDate
 }) => {
-    const formattedDuration = moment(date).fromNow();
+    const formattedDuration = moment(updatedDate).fromNow();
 
     // Convert payment method to uppercase and remove special characters
     const formattedPaymentMethod = paymentMethod.replace(/[^a-zA-Z0-9\s]/g, ' ').toUpperCase();
@@ -89,6 +91,8 @@ const styles = StyleSheet.create({
     },
     iconButton: {
         marginHorizontal: 4,
+        height: 48,
+        width: 48,
     },
     cardContent: {
         marginBottom: 10,

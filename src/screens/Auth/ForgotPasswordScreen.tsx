@@ -2,14 +2,14 @@ import React, { useState } from 'react';
 import { StyleSheet, ScrollView, Text } from 'react-native';
 import Input from '@components/Input';
 import Button from '@components/Button';
-import { useDispatch, useSelector } from 'react-redux';
-import { showToast } from '@store/toastSlice'; // Import for toast notifications
-import { forgotPasswordStart, forgotPasswordSuccess, forgotPasswordFailure } from '@store/authSlice';
-import { RootState } from '@store/store'; // Import for type checking
+import { useDispatch } from 'react-redux';
+import { showToast } from '@slices/toastSlice'; // Import for toast notifications
+import { forgotPasswordRequest, forgotPasswordSuccess, forgotPasswordFailure } from '@slices/authSlice';
+import { useTypedSelector } from '@app/store/store';
 
 const ForgotPasswordScreen: React.FC = () => {
     const [email, setEmail] = useState<string>('');
-    const { loading, error, passwordResetSuccess } = useSelector((state: RootState) => state.auth);
+    const { loading, error, passwordResetSuccess } = useTypedSelector((state) => state.auth);
     const dispatch = useDispatch();
 
     const handleForgotPassword = async () => {
@@ -19,16 +19,19 @@ const ForgotPasswordScreen: React.FC = () => {
         }
 
         try {
-            dispatch(forgotPasswordStart());
+            dispatch(forgotPasswordRequest({ email }));
 
             // Simulate password reset process (replace with real service call)
             // e.g., await AuthService.forgotPassword(email);
 
+            // Simulating success for demonstration purposes
             dispatch(forgotPasswordSuccess());
             dispatch(showToast({ message: 'Password reset link sent to your email.', type: 'success' }));
-        } catch (error) {
-            dispatch(forgotPasswordFailure('Failed to send reset link.'));
-            dispatch(showToast({ message: 'Failed to send reset link.', type: 'error' }));
+            setEmail(''); // Clear the input field after successful request
+        } catch (err) {
+            const errorMessage = typeof err === 'string' ? err : 'Failed to send reset link.';
+            dispatch(forgotPasswordFailure(errorMessage));
+            dispatch(showToast({ message: errorMessage, type: 'error' }));
         }
     };
 

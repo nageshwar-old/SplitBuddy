@@ -1,24 +1,40 @@
 import React, { useEffect } from 'react';
-import { View, StyleSheet, FlatList, Text, Alert } from 'react-native';
+import { View, StyleSheet, FlatList, Text, Alert, ActivityIndicator } from 'react-native';
 import { IconButton } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { useDispatch, useSelector } from 'react-redux';
-import { RootState } from '@store/store';
-import { fetchExpenses, deleteExpense } from '@store/expenseSlice';
+import { AppState } from '@store/store';
 import ExpenseCard from './ExpenseCard';
-import { RootStackParamList } from '@navigation/AppNavigator';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { categories as availableCategoriesList, paymentMethods as availablePaymentMethodsList } from '@utils/common'; // Import available categories and payment methods
+import { SETTINGS_KEYS } from '@constants/settingsConstants';
+import { deleteExpenseRequest, fetchExpensesRequest } from '@app/store/slices/expenseSlice';
+import { fetchGroupsRequest } from '@app/store/slices/groupSlice';
 
-type ExpenseListScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'ExpenseList'>;
+type ExpenseListScreenNavigationProp = NativeStackNavigationProp<AppStackParamList, 'ExpenseList'>;
 
 const ExpenseListScreen: React.FC = () => {
   const navigation = useNavigation<ExpenseListScreenNavigationProp>();
   const dispatch = useDispatch();
-  const { expenses, groups, loading, error } = useSelector((state: RootState) => state.expenses);
+  const { expenses: expenseData, loading, error } = useSelector((state: AppState) => state.expense);
+  const profile = useSelector((state: AppState) => state.user.profile);
+  const { settingsData } = useSelector((state: AppState) => state.settings);
+  const groups = useSelector((state: AppState) => state.group.groups);
+
+  const expenses: ExpenseResponseItem[] = expenseData?.expenses || [];
+
+  const selectedCategories: Category[] = (settingsData?.[SETTINGS_KEYS.CATEGORIES] || []).map((name: string) => ({
+    id: name,
+    name,
+  }));
+
+  const selectedPaymentMethods: PaymentMethod[] = (settingsData?.[SETTINGS_KEYS.PAYMENT_METHODS] || []).map((name: string) => ({
+    id: name,
+    name,
+  }));
 
   useEffect(() => {
-    dispatch(fetchExpenses());
+    dispatch(fetchExpensesRequest());
+    dispatch(fetchGroupsRequest());
   }, [dispatch]);
 
   useEffect(() => {
@@ -37,22 +53,19 @@ const ExpenseListScreen: React.FC = () => {
     });
   }, [navigation]);
 
-  // Function to get the group name
-  const getGroupName = (groupId: string) => {
+  const getGroupName = (groupId: string): string => {
     const group = groups.find((g) => g.id === groupId);
-    return group ? group.name : 'No Group';
+    return group ? group.groupName : 'No Group';
   };
 
-  // Function to get the category label by ID, default to "N/A"
-  const getCategoryLabel = (categoryId: string) => {
-    const category = availableCategoriesList.find((cat) => cat.id === categoryId);
-    return category ? category.name : 'N/A'; // Shortened fallback
+  const getCategoryLabel = (categoryId: string): string => {
+    const category = selectedCategories.find((cat) => cat.id === categoryId);
+    return category ? category.name : 'N/A';
   };
 
-  // Function to get the payment method label by ID, default to "N/A"
-  const getPaymentMethodLabel = (paymentMethodId: string) => {
-    const paymentMethod = availablePaymentMethodsList.find((method) => method.id === paymentMethodId);
-    return paymentMethod ? paymentMethod.name : 'N/A'; // Shortened fallback
+  const getPaymentMethodLabel = (paymentMethodId: string): string => {
+    const paymentMethod = selectedPaymentMethods.find((method) => method.id === paymentMethodId);
+    return paymentMethod ? paymentMethod.name : 'N/A';
   };
 
   const handleDelete = (expenseId: string) => {
@@ -61,7 +74,7 @@ const ExpenseListScreen: React.FC = () => {
       "Are you sure you want to delete this expense?",
       [
         { text: "Cancel", style: "cancel" },
-        { text: "Delete", style: "destructive", onPress: () => dispatch(deleteExpense(expenseId)) },
+        { text: "Delete", style: "destructive", onPress: () => dispatch(deleteExpenseRequest(expenseId)) },
       ],
       { cancelable: true }
     );
@@ -73,35 +86,31 @@ const ExpenseListScreen: React.FC = () => {
     </View>
   );
 
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <Text>Loading expenses...</Text>
-      </View>
-    );
-  }
-
-  if (error) {
-    return (
-      <View style={styles.errorContainer}>
-        <Text>Error loading expenses: {error}</Text>
-      </View>
-    );
-  }
-
   return (
     <View style={styles.container}>
+      {loading && (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="small" color="#6200EE" />
+          <Text style={styles.loadingText}>Loading expenses...</Text>
+        </View>
+      )}
+      {error && (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>Error loading expenses: {error}</Text>
+        </View>
+      )}
       <FlatList
         data={expenses}
         renderItem={({ item }) => (
           <ExpenseCard
             amount={item.amount.toString()}
-            category={getCategoryLabel(item.category)} // Get the category label
-            description={item.description}
-            paymentMethod={getPaymentMethodLabel(item.paymentMethod)} // Get the payment method label
-            group={getGroupName(item.group)}
+            category={item.category.name}
+            description={item.description || ''}
+            paymentMethod={item.paymentMethod.name}
+            group={item.group.groupName}
             date={item.date}
-            addedBy={item.addedBy} // Assuming addedBy is a part of item
+            updatedDate={item.updatedAt}
+            addedBy={profile?.firstName ?? ''}
             onEdit={() => navigation.navigate('EditExpense', { expenseId: item.id })}
             onDelete={() => handleDelete(item.id)}
           />
@@ -141,15 +150,22 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
+    flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 10,
+  },
+  loadingText: {
+    marginLeft: 10,
+    color: '#6200EE',
   },
   errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingTop: 20,
+    paddingTop: 10,
+    paddingBottom: 10,
+  },
+  errorText: {
+    color: '#B00020',
   },
 });
 

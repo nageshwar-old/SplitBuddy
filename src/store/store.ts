@@ -1,51 +1,59 @@
 import { configureStore } from '@reduxjs/toolkit';
 import createSagaMiddleware from 'redux-saga';
-import { all } from 'redux-saga/effects';
+import { combineReducers } from 'redux';
+import authReducer, { logoutSuccess } from '@slices/authSlice';
+import expenseReducer from '@slices/expenseSlice';
+import categoryReducer from '@slices/categorySlice';
+import paymentMethodReducer from '@slices/paymentMethodSlice';
+import groupReducer from '@slices/groupSlice';
+import toastReducer from '@slices/toastSlice';
+import userReducer from '@slices/userSlice';
+import settingsReducer from '@slices/settingsSlice';
+import rootSaga from './sagas/rootSaga';
+import { TypedUseSelectorHook, useSelector as rawUseSelector } from 'react-redux';
 
-// Reducers
-import expenseReducer from '@store/expenseSlice';
-import settingsReducer from '@store/settingsSlice';
-import toastReducer from '@store/toastSlice';
-import userReducer from '@store/userSlice'; // User reducer
-import authReducer from '@store/authSlice'; // Auth reducer (if applicable)
-
-// Sagas
-import expenseSagas from '@store/expenseSagas';
-import settingsSagas from '@store/settingsSagas';
-import userSagas from '@store/userSagas'; // User sagas
-import authSagas from '@store/authSagas';
-
-// Create the saga middleware
 const sagaMiddleware = createSagaMiddleware();
 
-// Configure the Redux store
-export const store = configureStore({
-    reducer: {
-        expenses: expenseReducer,
-        settings: settingsReducer,
-        toast: toastReducer,  // Toast reducer
-        users: userReducer,   // User reducer
-        auth: authReducer,    // Auth reducer (if applicable)
-    },
-    middleware: (getDefaultMiddleware) =>
-        getDefaultMiddleware({
-            serializableCheck: false,  // Disabling serializable check for non-serializable data
-        }).concat(sagaMiddleware),
+// Combine reducers
+const combinedReducer = combineReducers({
+    auth: authReducer,
+    expense: expenseReducer,
+    category: categoryReducer,
+    paymentMethod: paymentMethodReducer,
+    group: groupReducer,
+    toast: toastReducer,
+    user: userReducer,
+    settings: settingsReducer,
 });
 
-// Combine all sagas into a single rootSaga
-function* rootSaga() {
-    yield all([
-        expenseSagas(),   // Run expense-related sagas
-        settingsSagas(),  // Run settings-related sagas
-        userSagas(),      // Run user-related sagas
-        authSagas(),      // Run auth-related sagas (if applicable)
-    ]);
-}
+// Root reducer to handle logout and reset state
+const rootReducer = (state: any, action: any) => {
+    if (action.type === logoutSuccess.type) {
+        // Clear all state on logout by setting state to undefined
+        state = undefined;
+    }
+    return combinedReducer(state, action);
+};
 
-// Run the rootSaga
+// Configure store with saga middleware and adjusted middleware for serializability checks
+const store = configureStore({
+    reducer: rootReducer,
+    middleware: (getDefaultMiddleware) =>
+        getDefaultMiddleware({
+            serializableCheck: {
+                ignoredActions: [logoutSuccess.type], // Ignore logout action for serializability check
+            },
+        }).concat(sagaMiddleware),
+    devTools: process.env.NODE_ENV !== 'production', // Enable Redux DevTools in development
+});
+
+// Run root saga
 sagaMiddleware.run(rootSaga);
 
-// Infer the `RootState` and `AppDispatch` types from the store itself
-export type RootState = ReturnType<typeof store.getState>;
-export type AppDispatch = typeof store.dispatch;
+// Define AppState type for better TypeScript support
+export type AppState = ReturnType<typeof store.getState>;
+
+// Custom useTypedSelector hook with AppState type
+export const useTypedSelector: TypedUseSelectorHook<AppState> = rawUseSelector;
+
+export default store;

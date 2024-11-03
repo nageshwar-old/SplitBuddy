@@ -1,33 +1,58 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Provider as PaperProvider } from 'react-native-paper';
-import { Provider as ReduxProvider, useSelector, useDispatch } from 'react-redux';
-import { SafeAreaView, StyleSheet } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native'; // Import NavigationContainer
+import { Provider as ReduxProvider, useDispatch, useSelector } from 'react-redux';
+import { KeyboardAvoidingView, Platform, SafeAreaView, StyleSheet, ActivityIndicator, View } from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
 import AppNavigator from '@navigation/AppNavigator';
-import AuthNavigator from '@navigation/AuthNavigator'; // Import AuthNavigator for authentication flow
+import AuthNavigator from '@navigation/AuthNavigator';
 import theme from './theme';
-import CustomToast from '@components/CustomToast'; // Import the CustomToast component
-import { hideToast } from '@store/toastSlice'; // Import the hideToast action
-import { RootState, store } from '@store/store';
+import Toast from '@components/Toast';
+import { hideToast } from '@slices/toastSlice';
+import { setAuthStatus } from '@slices/authSlice';
+import store, { AppState } from '@store/store';
+import { getData } from '@utils/storage';
 
-// Toast Container Component
 const ToastContainer: React.FC = () => {
-  const toast = useSelector((state: RootState) => state.toast); // Access the toast state from Redux
+  const toast = useSelector((state: AppState) => state.toast.toast);
   const dispatch = useDispatch();
 
   return (
-    <CustomToast
-      visible={toast.visible}
-      message={toast.message}
-      onDismiss={() => dispatch(hideToast())}
-      type={toast.type}
-    />
+    <>
+      {toast && (
+        <Toast
+          visible={!!toast}
+          message={toast.message}
+          onDismiss={() => dispatch(hideToast())}
+          type={toast.type}
+          position={toast.position}
+        />
+      )}
+    </>
   );
 };
 
-// Main Content Component that handles navigation
 const AppContent: React.FC = () => {
-  const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
+  const dispatch = useDispatch();
+  const [isAppReady, setIsAppReady] = useState<boolean>(false);
+  const isAuthenticated = useSelector((state: AppState) => state.auth.isAuthenticated);
+
+  useEffect(() => {
+    const initializeApp = async () => {
+      const token = await getData<string>('authToken');
+      dispatch(setAuthStatus(!!token));
+      setIsAppReady(true);
+    };
+
+    initializeApp();
+  }, [dispatch]);
+
+  if (!isAppReady) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#6200EE" />
+      </View>
+    );
+  }
 
   return (
     <NavigationContainer>
@@ -37,23 +62,30 @@ const AppContent: React.FC = () => {
   );
 };
 
-// Root App Component
-const App: React.FC = () => {
-  return (
-    <ReduxProvider store={store}>
-      <PaperProvider theme={theme}>
-        <SafeAreaView style={styles.container}>
+const App: React.FC = () => (
+  <ReduxProvider store={store}>
+    <PaperProvider theme={theme}>
+      <SafeAreaView style={styles.container}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={{ flex: 1 }}
+        >
           <AppContent />
-        </SafeAreaView>
-      </PaperProvider>
-    </ReduxProvider>
-  );
-};
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </PaperProvider>
+  </ReduxProvider>
+);
 
-// Styles
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: 'white',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
     backgroundColor: 'white',
   },
 });

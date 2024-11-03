@@ -1,97 +1,85 @@
-import React, { useState, useCallback } from 'react';
-import { View, Text, FlatList, StyleSheet, Alert } from 'react-native';
-import { Button, Card, IconButton } from 'react-native-paper';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
-import { useDispatch, useSelector } from 'react-redux'; // Use Redux hooks
-import { RootState } from '@store/store'; // Import RootState
-import { fetchGroups, deleteGroup } from '@store/expenseSlice'; // Import Redux actions
-import { RootStackParamList } from '@navigation/AppNavigator';
+import React, { useEffect } from 'react';
+import { View, Text, FlatList, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { IconButton, Card } from 'react-native-paper';
+import { useDispatch, useSelector } from 'react-redux';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useNavigation } from '@react-navigation/native';
+import { AppState } from '@store/store';
+import { deleteGroupRequest, fetchGroupsRequest } from '@app/store/slices/groupSlice';
 
-type GroupListScreenNavigationProp = StackNavigationProp<RootStackParamList, 'GroupList'>;
-
-interface Group {
-    id: string;
-    name: string;
-    currency: string;
-    description?: string;
-}
+type GroupListScreenNavigationProp = NativeStackNavigationProp<AppStackParamList, 'GroupList'>;
 
 const GroupListScreen: React.FC = () => {
-    const navigation = useNavigation<GroupListScreenNavigationProp>();
     const dispatch = useDispatch();
+    const navigation = useNavigation<GroupListScreenNavigationProp>();
+    const { groups, loading, error } = useSelector((state: AppState) => state.group);
 
-    // Get the groups, loading, and error states from Redux
-    const { groups, loading, error } = useSelector((state: RootState) => state.expenses);
+    useEffect(() => {
+        dispatch(fetchGroupsRequest());
+    }, [dispatch]);
 
-    // Fetch groups when the screen is focused
-    useFocusEffect(
-        useCallback(() => {
-            dispatch(fetchGroups()); // Dispatch the Redux action to fetch groups
-        }, [dispatch])
-    );
+    useEffect(() => {
+        navigation.setOptions({
+            headerRight: () => (
+                <IconButton
+                    icon="plus"
+                    iconColor="#6200EE"
+                    size={24}
+                    onPress={() => navigation.navigate('AddGroup')}
+                />
+            ),
+        });
+    }, [navigation]);
 
-    // Handle deleting a group
     const handleDeleteGroup = (groupId: string) => {
         Alert.alert(
             "Delete Group",
             "Are you sure you want to delete this group?",
             [
-                {
-                    text: "Cancel",
-                    style: "cancel",
-                },
-                {
-                    text: "Delete",
-                    style: "destructive",
-                    onPress: () => {
-                        dispatch(deleteGroup(groupId)); // Dispatch the Redux action to delete a group
-                    },
-                },
+                { text: "Cancel", style: "cancel" },
+                { text: "Delete", style: "destructive", onPress: () => dispatch(deleteGroupRequest(groupId)) },
             ],
             { cancelable: true }
         );
     };
 
-    const renderGroup = ({ item }: { item: Group }) => (
+    const renderGroup = ({ item }: { item: IGroupItemResponse }) => (
         <Card style={styles.groupCard}>
             <Card.Content>
                 <View style={styles.groupHeader}>
-                    <Text style={styles.groupName}>{item.name}</Text>
+                    <Text style={styles.groupName}>{item.groupName}</Text>
                     <IconButton
                         icon="delete"
                         iconColor="#333"
                         size={24}
-                        onPress={() => handleDeleteGroup(item.id)} // Call the delete function when pressed
+                        onPress={() => handleDeleteGroup(item.id)}
                     />
                 </View>
-                <Text style={styles.groupCurrency}>Currency: {item.currency}</Text>
-                {item.description && <Text style={styles.groupDescription}>Description: {item.description}</Text>}
+                <Text style={styles.groupDetail}>Currency: {item.currency}</Text>
+                <Text style={styles.groupDetail}>Users: {item.userIds?.length || 0}</Text>
             </Card.Content>
         </Card>
     );
 
-    const handleAddGroup = () => {
-        navigation.navigate('AddGroup');
-    };
-
     return (
         <View style={styles.container}>
-            {loading ? (
-                <Text>Loading...</Text>
-            ) : error ? (
-                <Text>Error: {error}</Text>
-            ) : (
-                <FlatList
-                    data={groups}
-                    renderItem={renderGroup}
-                    keyExtractor={item => item.id}
-                    ListEmptyComponent={<Text>No groups found.</Text>}
-                />
+            {loading && (
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="small" color="#6200EE" />
+                    <Text style={styles.loadingText}>Loading groups...</Text>
+                </View>
             )}
-            <Button mode="contained" onPress={handleAddGroup} style={styles.addButton}>
-                Add Group
-            </Button>
+            {error && (
+                <View style={styles.errorContainer}>
+                    <Text style={styles.errorText}>Error loading groups: {error}</Text>
+                </View>
+            )}
+            <FlatList
+                data={groups}
+                renderItem={renderGroup}
+                keyExtractor={(item) => item.id}
+                ListEmptyComponent={<Text style={styles.emptyText}>No groups available. Add your first group!</Text>}
+            />
         </View>
     );
 };
@@ -100,9 +88,15 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         padding: 16,
+        backgroundColor: '#F8F9FA',
     },
     groupCard: {
         marginBottom: 16,
+        paddingHorizontal: 10,
+        paddingVertical: 8,
+        backgroundColor: '#fff',
+        borderRadius: 8,
+        elevation: 2,
     },
     groupHeader: {
         flexDirection: 'row',
@@ -113,16 +107,32 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: 'bold',
     },
-    groupCurrency: {
+    groupDetail: {
         fontSize: 14,
         color: 'gray',
     },
-    groupDescription: {
-        fontSize: 14,
-        color: 'gray',
+    loadingContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 10,
     },
-    addButton: {
-        marginTop: 16,
+    loadingText: {
+        marginLeft: 10,
+        color: '#6200EE',
+    },
+    errorContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingTop: 10,
+        paddingBottom: 10,
+    },
+    errorText: {
+        color: '#B00020',
+    },
+    emptyText: {
+        fontSize: 16,
+        color: '#888',
+        textAlign: 'center',
     },
 });
 

@@ -1,0 +1,46 @@
+2024-09-10 13:35:05.210 +08 [44486] LOG:  starting PostgreSQL 14.13 (Homebrew) on aarch64-apple-darwin23.4.0, compiled by Apple clang version 15.0.0 (clang-1500.3.9.4), 64-bit
+2024-09-10 13:35:05.211 +08 [44486] LOG:  listening on IPv6 address "::1", port 5432
+2024-09-10 13:35:05.211 +08 [44486] LOG:  listening on IPv4 address "127.0.0.1", port 5432
+2024-09-10 13:35:05.211 +08 [44486] LOG:  listening on Unix socket "/tmp/.s.PGSQL.5432"
+2024-09-10 13:35:05.212 +08 [44487] LOG:  database system was shut down at 2024-09-10 13:34:49 +08
+2024-09-10 13:35:05.214 +08 [44486] LOG:  database system is ready to accept connections
+2024-09-10 13:35:55.326 +08 [46871] FATAL:  database "nageshwarreddypandem" does not exist
+2024-09-10 13:38:24.826 +08 [49288] FATAL:  role "postgres" does not exist
+2024-09-10 13:44:05.332 +08 [44492] LOG:  could not open temporary statistics file "pg_stat_tmp/global.tmp": No such file or directory
+2024-09-10 13:44:06.031 +08 [44492] LOG:  could not open temporary statistics file "pg_stat_tmp/global.tmp": No such file or directory
+2024-09-10 13:44:06.031 +08 [44492] LOG:  could not open temporary statistics file "pg_stat_tmp/global.tmp": No such file or directory
+2024-09-10 13:44:06.732 +08 [44492] LOG:  could not open temporary statistics file "pg_stat_tmp/global.tmp": No such file or directory
+2024-09-10 13:44:06.733 +08 [44492] LOG:  could not open temporary statistics file "pg_stat_tmp/global.tmp": No such file or directory
+2024-09-10 13:44:07.435 +08 [44492] LOG:  could not open temporary statistics file "pg_stat_tmp/global.tmp": No such file or directory
+2024-09-10 13:44:07.435 +08 [44492] LOG:  could not open temporary statistics file "pg_stat_tmp/global.tmp": No such file or directory
+2024-09-10 13:44:08.136 +08 [44492] LOG:  could not open temporary statistics file "pg_stat_tmp/global.tmp": No such file or directory
+2024-09-10 13:44:08.136 +08 [44492] LOG:  could not open temporary statistics file "pg_stat_tmp/global.tmp": No such file or directory
+2024-09-10 13:44:08.836 +08 [44492] LOG:  could not open temporary statistics file "pg_stat_tmp/global.tmp": No such file or directory
+2024-09-10 13:44:08.836 +08 [44492] LOG:  could not open temporary statistics file "pg_stat_tmp/global.tmp": No such file or directory
+2024-09-10 13:44:09.539 +08 [44492] LOG:  could not open temporary statistics file "pg_stat_tmp/global.tmp": No such file or directory
+2024-09-10 13:44:09.539 +08 [44492] LOG:  could not open temporary statistics file "pg_stat_tmp/global.tmp": No such file or directory
+2024-09-10 13:44:10.239 +08 [44492] LOG:  could not open temporary statistics file "pg_stat_tmp/global.tmp": No such file or directory
+2024-09-10 13:44:10.239 +08 [44492] LOG:  could not open temporary statistics file "pg_stat_tmp/global.tmp": No such file or directory
+2024-09-10 13:44:10.941 +08 [44492] LOG:  could not open temporary statistics file "pg_stat_tmp/global.tmp": No such file or directory
+2024-09-10 13:44:10.941 +08 [44492] LOG:  could not open temporary statistics file "pg_stat_tmp/global.tmp": No such file or directory
+2024-09-10 13:44:11.639 +08 [44492] LOG:  could not open temporary statistics file "pg_stat_tmp/global.tmp": No such file or directory
+2024-09-10 13:44:11.639 +08 [44492] LOG:  could not open temporary statistics file "pg_stat_tmp/global.tmp": No such file or directory
+2024-09-10 13:44:12.341 +08 [44492] LOG:  could not open temporary statistics file "pg_stat_tmp/global.tmp": No such file or directory
+2024-09-10 13:44:12.341 +08 [44492] LOG:  could not open temporary statistics file "pg_stat_tmp/global.tmp": No such file or directory
+2024-09-10 13:44:13.042 +08 [44492] LOG:  could not open temporary statistics file "pg_stat_tmp/global.tmp": No such file or directory
+2024-09-10 13:44:13.042 +08 [44492] LOG:  could not open temporary statistics file "pg_stat_tmp/global.tmp": No such file or directory
+2024-09-10 13:44:13.743 +08 [44492] LOG:  could not open temporary statistics file "pg_stat_tmp/global.tmp": No such file or directory
+2024-09-10 13:44:13.743 +08 [44492] LOG:  could not open temporary statistics file "pg_stat_tmp/global.tmp": No such file or directory
+2024-09-10 13:44:14.445 +08 [44492] LOG:  could not open temporary statistics file "pg_stat_tmp/global.tmp": No such file or directory
+2024-09-10 13:44:14.445 +08 [44492] LOG:  could not open temporary statistics file "pg_stat_tmp/global.tmp": No such file or directory
+2024-09-10 13:44:15.148 +08 [44492] LOG:  could not open temporary statistics file "pg_stat_tmp/global.tmp": No such file or directory
+2024-09-10 13:44:15.148 +08 [44492] LOG:  could not open temporary statistics file "pg_stat_tmp/global.tmp": No such file or directory
+2024-09-10 13:44:15.849 +08 [44492] LOG:  could not open temporary statistics file "pg_stat_tmp/global.tmp": No such file or directory
+2024-09-10 13:44:15.849 +08 [44492] LOG:  could not open temporary statistics file "pg_stat_tmp/global.tmp": No such file or directory
+2024-09-10 13:44:16.290 +08 [44491] LOG:  using stale statistics instead of current ones because stats collector is not responding
+2024-09-10 13:44:24.858 +08 [44486] LOG:  could not open file "postmaster.pid": No such file or directory
+2024-09-10 13:44:24.858 +08 [44486] LOG:  performing immediate shutdown because data directory lock file is invalid
+2024-09-10 13:44:24.858 +08 [44486] LOG:  received immediate shutdown request
+2024-09-10 13:44:24.858 +08 [44486] LOG:  could not open file "postmaster.pid": No such file or directory
+2024-09-10 13:44:24.859 +08 [44492] LOG:  could not open temporary statistics file "pg_stat/global.tmp": No such file or directory
+2024-09-10 13:44:24.863 +08 [44486] LOG:  database system is shut down

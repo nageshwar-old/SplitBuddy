@@ -1,74 +1,114 @@
-import React, { useState } from 'react';
-import { StyleSheet, ScrollView } from 'react-native';
+import React, { useEffect } from 'react';
+import { StyleSheet, ScrollView, Text, View } from 'react-native';
+import { useForm, Controller } from 'react-hook-form';
 import Input from '@components/Input';
 import Button from '@components/Button';
-import { useDispatch } from 'react-redux';
-import { showToast } from '@store/toastSlice'; // Snackbar for notifications
-import { generateUUID } from '@utils/common';
-import { UserService } from '@services/userService'; // Import the UserService
+import { useDispatch, useSelector } from 'react-redux';
+import { showToast } from '@slices/toastSlice';
+import { registerRequest, clearError } from '@store/slices/authSlice';
+import { AppState } from '@store/store';
+import PasswordInput from '@components/PasswordInput';
+
+interface SignupFormData {
+    firstName: string;
+    lastName: string;
+    email: string;
+    username: string;
+    password: string;
+    confirmPassword: string;
+    country: string;
+}
 
 const SignupScreen: React.FC = () => {
-    const [name, setName] = useState<string>('');
-    const [email, setEmail] = useState<string>('');
-    const [username, setUsername] = useState<string>('');
-    const [password, setPassword] = useState<string>('');
-    const [confirmPassword, setConfirmPassword] = useState<string>('');
-    const [country, setCountry] = useState<string>('');
-
     const dispatch = useDispatch();
+    const { loading, error, isAuthenticated } = useSelector((state: AppState) => state.auth);
+    const { control, handleSubmit, reset, formState: { errors } } = useForm<SignupFormData>();
 
-    const handleSignup = async () => {
-        if (!name || !email || !username || !password || !confirmPassword || !country) {
-            dispatch(showToast({ message: 'Please fill out all required fields', type: 'error' }));
-            return;
+    // Clear error on mount and show toast on error or success
+    useEffect(() => {
+        dispatch(clearError());
+    }, [dispatch]);
+
+    useEffect(() => {
+        if (error) dispatch(showToast({ message: `Signup failed: ${error}`, type: 'error' }));
+        if (isAuthenticated) {
+            dispatch(showToast({ message: 'Signup successful!', type: 'success' }));
+            reset(); // Clear the form
         }
+    }, [error, isAuthenticated, dispatch, reset]);
 
-        if (password !== confirmPassword) {
+    const onSubmit = (data: SignupFormData) => {
+        // Trim all input fields
+        const trimmedData = {
+            firstName: data.firstName.trim(),
+            lastName: data.lastName.trim(),
+            email: data.email.trim(),
+            username: data.username.trim(),
+            password: data.password.trim(),
+            confirmPassword: data.confirmPassword.trim(),
+            country: data.country.trim(),
+        };
+
+        if (trimmedData.password !== trimmedData.confirmPassword) {
             dispatch(showToast({ message: 'Passwords do not match', type: 'error' }));
             return;
         }
-
-        const id = generateUUID();
-        const newUser = {
-            id,
-            name,
-            email,
-            phone: '',  // Optional phone field (not part of required fields)
-            address: '', // Optional address field (not part of required fields)
-            city: '', // Optional city field (not part of required fields)
-            country,
-            username,
-            password,  // In production, you may hash the password before saving
-            token: '',  // Token can be handled by your AuthService
-            photoUrl: '', // You can add logic for handling user profile photos
-            isAdmin: false,  // Defaulting to non-admin
-        };
-
-        try {
-            await UserService.addUser(newUser);  // Add the user using UserService
-            dispatch(showToast({ message: 'Signup successful!', type: 'success' }));
-
-            // Clear form after successful signup
-            setName('');
-            setEmail('');
-            setUsername('');
-            setPassword('');
-            setConfirmPassword('');
-            setCountry('');
-        } catch (error) {
-            dispatch(showToast({ message: 'Signup failed', type: 'error' }));
-        }
+        dispatch(registerRequest(trimmedData));
     };
+
+    // Get the first error message
+    const firstError = errors && Object.values(errors)[0]?.message;
 
     return (
         <ScrollView contentContainerStyle={styles.container}>
-            <Input placeholder="Name" value={name} onChangeText={setName} style={styles.input} />
-            <Input placeholder="Email" value={email} onChangeText={setEmail} keyboardType="email-address" style={styles.input} />
-            <Input placeholder="Username" value={username} onChangeText={setUsername} style={styles.input} />
-            <Input placeholder="Country" value={country} onChangeText={setCountry} style={styles.input} />
-            <Input placeholder="Password" value={password} onChangeText={setPassword} secureTextEntry={true} style={styles.input} />
-            <Input placeholder="Confirm Password" value={confirmPassword} onChangeText={setConfirmPassword} secureTextEntry={true} style={styles.input} />
-            <Button onPress={handleSignup}>Sign Up</Button>
+            {/* Display the first error message at the top */}
+            {firstError && <Text style={styles.errorText}>{firstError}</Text>}
+
+            {/* Form fields */}
+            {['firstName', 'lastName', 'email', 'username', 'country'].map((field) => (
+                <Controller
+                    key={field}
+                    control={control}
+                    name={field as keyof SignupFormData}
+                    rules={{ required: `${field.charAt(0).toUpperCase() + field.slice(1)} is required` }}
+                    render={({ field: { onChange, value } }) => (
+                        <Input
+                            placeholder={field.charAt(0).toUpperCase() + field.slice(1)}
+                            value={value}
+                            onChangeText={onChange}
+                            style={styles.input}
+                            editable={!loading}
+                        />
+                    )}
+                />
+            ))}
+
+            {/* Password fields */}
+            {['password', 'confirmPassword'].map((field) => (
+                <Controller
+                    key={field}
+                    control={control}
+                    name={field as keyof SignupFormData}
+                    rules={{
+                        required: `${field === 'password' ? 'Password' : 'Confirm Password'} is required`,
+                        minLength: { value: 6, message: 'Password must be at least 6 characters' }
+                    }}
+                    render={({ field: { onChange, value } }) => (
+                        <PasswordInput
+                            placeholder={field === 'password' ? 'Password' : 'Confirm Password'}
+                            value={value}
+                            onChangeText={onChange}
+                            style={styles.input}
+                            editable={!loading}
+                        />
+                    )}
+                />
+            ))}
+
+            {/* Submit Button */}
+            <Button onPress={handleSubmit(onSubmit)} disabled={loading}>
+                {loading ? 'Signing Up...' : 'Sign Up'}
+            </Button>
         </ScrollView>
     );
 };
@@ -81,6 +121,11 @@ const styles = StyleSheet.create({
     },
     input: {
         marginVertical: 10,
+    },
+    errorText: {
+        color: 'red',
+        textAlign: 'center',
+        marginBottom: 10,
     },
 });
 

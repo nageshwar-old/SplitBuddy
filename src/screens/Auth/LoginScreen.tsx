@@ -3,12 +3,11 @@ import { StyleSheet, ScrollView, Text, TouchableOpacity, View } from 'react-nati
 import Input from '@components/Input';
 import Button from '@components/Button';
 import { useDispatch, useSelector } from 'react-redux';
-import { RootState } from '@store/store'; // Import RootState for type checking
-import { loginStart } from '@store/authSlice'; // Import the loginStart action to trigger the saga
-import { showToast } from '@store/toastSlice'; // Import for toast notifications
 import { useNavigation } from '@react-navigation/native';
-import { AuthStackParamList } from '@navigation/AuthNavigator'; // Assuming this is defined in your Auth Navigator
 import { StackNavigationProp } from '@react-navigation/stack';
+import { loginRequest, loginFailure } from '@slices/authSlice'; // Import slice methods
+import { AppState } from '@store/store'; // Adjust the import path if necessary
+import PasswordInput from '@app/components/PasswordInput';
 
 type LoginScreenNavigationProp = StackNavigationProp<AuthStackParamList, 'Login'>;
 
@@ -18,16 +17,18 @@ const LoginScreen: React.FC = () => {
 
     const dispatch = useDispatch();
     const navigation = useNavigation<LoginScreenNavigationProp>();
-    const { loading, error } = useSelector((state: RootState) => state.auth); // Get the auth state
+    const { loading, error } = useSelector((state: AppState) => state.auth); // Get the auth state
 
     const handleLogin = () => {
-        if (!identifier || !password) {
-            dispatch(showToast({ message: 'Please fill out all fields', type: 'error' }));
+        const trimmedIdentifier = identifier.trim();
+        const trimmedPassword = password.trim();
+
+        if (!trimmedIdentifier || !trimmedPassword) {
+            dispatch(loginFailure('Please fill out all fields'));
             return;
         }
 
-        // Dispatch the loginStart action, which will be intercepted by the saga
-        dispatch(loginStart({ identifier, password }));
+        dispatch(loginRequest({ username: trimmedIdentifier, password: trimmedPassword }));
     };
 
     return (
@@ -43,11 +44,10 @@ const LoginScreen: React.FC = () => {
                 style={styles.input}
                 editable={!loading} // Disable input while loading
             />
-            <Input
+            <PasswordInput
                 placeholder="Password"
                 value={password}
                 onChangeText={setPassword}
-                secureTextEntry={true}
                 style={styles.input}
                 editable={!loading} // Disable input while loading
             />
@@ -89,7 +89,7 @@ const styles = StyleSheet.create({
         fontSize: 28,
         fontWeight: 'bold',
         marginBottom: 30,
-        color: '#6200EE', // Customize the color to match your theme
+        color: '#6200EE',
     },
     input: {
         width: '100%',

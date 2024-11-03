@@ -14,11 +14,17 @@
     "allowSyntheticDefaultImports": true,
     "baseUrl": "./",
     "paths": {
+      "@app/*": [
+        "src/*"
+      ],
       "@assets/*": [
         "src/assets/*"
       ],
       "@components/*": [
         "src/components/*"
+      ],
+      "@config/*": [
+        "src/config/*"
       ],
       "@constants/*": [
         "src/constants/*"
@@ -42,7 +48,13 @@
         "src/utils/*"
       ],
       "@services/*": [
-        "src/services/*"
+        "src/store/services/*"
+      ],
+      "@slices/*": [
+        "src/store/slices/*"
+      ],
+      "@sagas/*": [
+        "src/store/sagas/*"
       ],
       "@store/*": [
         "src/store/*"

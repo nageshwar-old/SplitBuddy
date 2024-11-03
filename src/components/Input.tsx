@@ -1,41 +1,52 @@
 import React from 'react';
-import { TextInput as PaperTextInput, TextInputProps as PaperTextInputProps } from 'react-native-paper';
+import { View, StyleSheet } from 'react-native';
+import { TextInput as PaperTextInput, TextInputProps as PaperTextInputProps, Text } from 'react-native-paper';
 
-interface InputProps extends PaperTextInputProps {
-  value: string;
-  onChangeText?: (text: string) => void;
-  placeholder: string;
-  placeholderTextColor?: string;
-  icon?: string;  // Optional prop for an icon
-  iconPosition?: 'left' | 'right';  // Optional prop to specify the icon position
-  onIconPress?: () => void;  // Optional callback when the icon is pressed
+interface InputProps extends Omit<PaperTextInputProps, 'label'> {
+  label?: React.ReactNode; // Accepts both string and React node
+  icon?: string;
+  iconPosition?: 'left' | 'right';
+  onIconPress?: () => void;
 }
 
 const Input: React.FC<InputProps> = ({
-  value,
-  onChangeText = () => { },
-  placeholder,
-  placeholderTextColor = '#888',
+  label,
   icon,
-  iconPosition = 'right',  // Default to 'right' position for the icon
+  iconPosition = 'right',
   onIconPress,
-  ...rest
-}) => (
-  <PaperTextInput
-    mode="outlined"
-    label={placeholder}
-    value={value}
-    onChangeText={onChangeText}
-    placeholder={placeholder}
-    placeholderTextColor={placeholderTextColor}
-    {...(icon && iconPosition === 'left' && {
-      left: <PaperTextInput.Icon icon={icon} onPress={onIconPress} />
-    })}
-    {...(icon && iconPosition === 'right' && {
-      right: <PaperTextInput.Icon icon={icon} onPress={onIconPress} />
-    })}
-    {...rest}
-  />
-);
+  ...props
+}) => {
+  return (
+    <View style={styles.container}>
+      {/* Render label if it's a React node; otherwise, pass it directly to PaperTextInput */}
+      {typeof label !== 'string' && label ? (
+        <Text style={styles.label}>{label}</Text>
+      ) : null}
+      <PaperTextInput
+        mode="outlined"
+        {...props}
+        label={typeof label === 'string' ? label : undefined} // Pass only if label is a string
+        style={[styles.input, props.style]}
+        left={icon && iconPosition === 'left' ? <PaperTextInput.Icon icon={icon} onPress={onIconPress} /> : undefined}
+        right={icon && iconPosition === 'right' ? <PaperTextInput.Icon icon={icon} onPress={onIconPress} /> : undefined}
+      />
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    marginBottom: 16,
+    width: '100%',
+  },
+  label: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 4,
+  },
+  input: {
+    height: 50,
+  },
+});
 
 export default Input;

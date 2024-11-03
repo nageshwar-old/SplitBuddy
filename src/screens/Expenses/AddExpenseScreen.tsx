@@ -1,113 +1,94 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { StyleSheet, ScrollView } from 'react-native';
 import Input from '@components/Input';
 import Button from '@components/Button';
 import MyDatePicker from '@components/MyDatePicker';
-import { generateUUID, categories as availableCategoriesList, paymentMethods as availablePaymentMethodsList } from '@utils/common';
 import { useDispatch, useSelector } from 'react-redux';
-import { RootState } from '@store/store'; // Assuming you have access to user state in the store
-import { addExpense } from '@store/expenseSlice';
-import { showToast } from '@store/toastSlice'; // Use the Redux action for Snackbar
-import { SettingsService } from '@services/settingsService';
-import { Expense, ExpenseService } from '@services/expenseService';
-import { useFocusEffect } from '@react-navigation/native';
+import { AppState } from '@store/store';
+import { createExpenseRequest } from '@slices/expenseSlice';
+import { showToast } from '@slices/toastSlice';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import MultiSelect from '@components/MultiSelect';
+import { generateUUID } from '@utils/common';
 
 const AddExpenseScreen: React.FC = () => {
   const [amount, setAmount] = useState<string>('');
-  const [category, setCategory] = useState<string[]>([]);
+  const [category, setCategory] = useState<{ id: string; name: string; data?: any }[]>([]);
   const [description, setDescription] = useState<string>('');
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
-  const [paymentMethod, setPaymentMethod] = useState<string[]>([]);
-  const [group, setGroup] = useState<string[]>([]);
-  const [availableGroups, setAvailableGroups] = useState<{ id: string; name: string }[]>([]);
-  const [availableCategories, setAvailableCategories] = useState<{ id: string; name: string }[]>([]);
-  const [availablePaymentMethods, setAvailablePaymentMethods] = useState<{ id: string; name: string }[]>([]);
+  const [paymentMethod, setPaymentMethod] = useState<{ id: string; name: string; data?: any }[]>([]);
+  const [group, setGroup] = useState<{ id: string; name: string; data?: any }[]>([]);
 
   const dispatch = useDispatch();
+  const navigation = useNavigation();
+  const user = useSelector((state: AppState) => state.user.profile);
+  const availableCategoriesList = useSelector((state: AppState) => state.category.categories);
+  const availablePaymentMethodsList = useSelector((state: AppState) => state.paymentMethod.paymentMethods);
+  const availableGroups = useSelector((state: AppState) => state.group.groups);
 
-  // Access the current user from Redux state
-  const user = useSelector((state: RootState) => state.auth.user); // Assuming user data is stored in auth slice
-
-  // Load available groups
-  const loadGroups = async () => {
-    try {
-      const groups = await ExpenseService.getGroups();
-      const groupList = groups.map(group => ({ id: group.id, name: group.name }));
-      setAvailableGroups(groupList);
-
-      if (groupList.length > 0) {
-        setGroup([groupList[0].id]);
-      }
-    } catch (error) {
-      // Show error snackbar only
-      dispatch(showToast({ message: 'Failed to load groups', type: 'error' }));
-    }
-  };
+  const [availableCategories, setAvailableCategories] = useState<{ id: string; name: string; data?: any }[]>([]);
+  const [availablePaymentMethods, setAvailablePaymentMethods] = useState<{ id: string; name: string; data?: any }[]>([]);
+  const [availableGroupsList, setAvailableGroupsList] = useState<{ id: string; name: string; data?: any }[]>([]);
 
   useFocusEffect(
     useCallback(() => {
-      loadGroups();  // Refetch groups every time the screen is focused
-    }, [])
-  );
+      const loadSettings = () => {
+        const categoriesList = availableCategoriesList.map(category => ({
+          id: category.id,
+          name: category.name,
+          data: category,
+        }));
+        const paymentMethodsList = availablePaymentMethodsList.map(method => ({
+          id: method.id,
+          name: method.name,
+          data: method,
+        }));
+        const groupNamesList = availableGroups.map(group => ({
+          id: group.id,
+          name: group.groupName,
+          data: group,
+        }));
 
-  useFocusEffect(
-    useCallback(() => {
-      const loadSettings = async () => {
-        try {
-          const visibleCategories = await SettingsService.getVisibleCategories();
-          const categoriesList = availableCategoriesList
-            .filter(category => visibleCategories[category.id])
-            .map(category => ({ id: category.id, name: category.name }));
-
-          setAvailableCategories(categoriesList);
-
-          const visiblePaymentMethods = await SettingsService.getVisiblePaymentMethods();
-          const paymentMethodsList = availablePaymentMethodsList
-            .filter(method => visiblePaymentMethods[method.id])
-            .map(method => ({ id: method.id, name: method.name }));
-
-          setAvailablePaymentMethods(paymentMethodsList);
-        } catch (error) {
-          // Show error snackbar for settings loading failure
-          dispatch(showToast({ message: 'Failed to load settings', type: 'error' }));
-        }
+        setAvailableCategories(categoriesList);
+        setAvailablePaymentMethods(paymentMethodsList);
+        setAvailableGroupsList(groupNamesList);
       };
 
       loadSettings();
-    }, [dispatch])
+    }, [availableCategoriesList, availablePaymentMethodsList, availableGroups])
   );
 
-  const handleAddExpense = () => {
-    if (!amount || category.length === 0 || !description || paymentMethod.length === 0 || group.length === 0) {
+  const handleAddExpense = async () => {
+    const trimmedAmount = amount.trim();
+    const trimmedDescription = description.trim();
+
+    if (!trimmedAmount || category.length === 0 || !trimmedDescription || paymentMethod.length === 0 || group.length === 0) {
       dispatch(showToast({ message: 'Please fill out all fields', type: 'error' }));
       return;
     }
 
-    const id = generateUUID();
-
-    const newExpense: Expense = {
-      id: id,
-      amount: parseFloat(amount),
-      category: category[0],
-      description,
+    const newExpense = {
+      amount: parseFloat(trimmedAmount),
+      categoryId: category[0]?.id,
+      description: trimmedDescription,
       date: (selectedDate || new Date()).toISOString(),
-      paymentMethod: paymentMethod[0],
-      group: group[0],
-      addedBy: user ? user.name : 'Unknown', // Set the addedBy field with the current user's name
+      paymentMethodId: paymentMethod[0]?.id,
+      groupId: group[0]?.id,
+      addedBy: user ? user.id : 'Unknown',
+      authorId: user ? user.id : 'Unknown',
     };
 
     try {
-      dispatch(addExpense(newExpense));
+      await dispatch(createExpenseRequest(newExpense));
       dispatch(showToast({ message: 'Expense added successfully', type: 'success' }));
 
-      // Clear fields after successful addition
       setAmount('');
       setCategory([]);
       setDescription('');
       setSelectedDate(undefined);
       setPaymentMethod([]);
-      setGroup(availableGroups.length > 0 ? [availableGroups[0].id] : []);
+      setGroup(availableGroups.length > 0 ? [{ id: availableGroups[0].id, name: availableGroups[0].groupName }] : []);
+      navigation.goBack();
     } catch (error) {
       dispatch(showToast({ message: 'Failed to add expense', type: 'error' }));
     }
@@ -117,13 +98,21 @@ const AddExpenseScreen: React.FC = () => {
     setSelectedDate(date);
   };
 
-  const handleDateCancel = () => {
-    console.log('Date selection canceled');
-  };
+  const handleDateCancel = () => { };
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
+      <MultiSelect
+        items={availableGroupsList}
+        selectedItems={group}
+        onSelectionChange={setGroup}
+        title="Select a Group"
+        placeholder="Choose Group"
+        fieldLabel="Group"
+        isSingleSelect={true}
+      />
       <Input
+        label="Amount"
         placeholder="Amount"
         value={amount}
         onChangeText={setAmount}
@@ -148,16 +137,8 @@ const AddExpenseScreen: React.FC = () => {
         fieldLabel="Payment Method"
         isSingleSelect={true}
       />
-      <MultiSelect
-        items={availableGroups}
-        selectedItems={group}
-        onSelectionChange={setGroup}
-        title="Select a Group"
-        placeholder="Choose Group"
-        fieldLabel="Group"
-        isSingleSelect={true}
-      />
       <Input
+        label="Description"
         placeholder="Description"
         value={description}
         onChangeText={setDescription}

@@ -1,39 +1,112 @@
-// Define the structure of an Expense object
-interface Expense {
-    id: string;                // Unique identifier for the expense
-    amount: number;            // Amount of the expense
-    category: string;          // Category under which the expense falls (e.g., Food, Transport)
-    description: string;       // Description or note about the expense
-    date: string;              // Date when the expense was made, stored as an ISO string
-    paymentMethod: string;     // Method of payment (e.g., Cash, Credit Card)
-    group: string;             // Group ID or name to which the expense belongs
-}
-
-// Define the state shape for expenses in your application
-interface ExpensesState {
-    expenses: Expense[];       // Array of expense objects
-}
-
-// Define possible actions for managing expenses
-type ExpensesAction =
-    | { type: 'ADD_EXPENSE'; payload: Expense }             // Action to add a new expense
-    | { type: 'EDIT_EXPENSE'; payload: Expense }            // Action to edit an existing expense
-    | { type: 'DELETE_EXPENSE'; payload: string };          // Action to delete an expense by its ID
-
-// Example interface for additional types like categories
-interface ExpenseCategory {
-    id: string;                // Unique identifier for the category
-    name: string;              // Name of the category (e.g., Food, Utilities)
-}
-
-// Optionally, define types for context or other state management tools
-interface ExpenseContextType {
-    state: ExpensesState;                          // Current state of expenses
-    dispatch: React.Dispatch<ExpensesAction>;      // Dispatch function to trigger actions
-}
-
+// Define supporting types
 interface Category {
+    id: string;
     name: string;
+}
+
+interface PaymentMethod {
+    id: string;
+    name: string;
+}
+
+interface Group {
+    id: string;
+    groupName: string;
+}
+
+interface ApiResponse {
+    status: string;
+    message: string;
+}
+
+// Updated Expense Response Item structure
+interface ExpenseResponseItem {
+    id: string;
+    category: { id: string; name: string };
     amount: number;
-    icon: string;
+    description: string;
+    date: string;
+    createdAt: string;
+    updatedAt: string;
+    addedBy: string;
+    paymentMethod: { id: string; name: string };
+    group: { id: string; groupName: string };
+}
+
+// Update for Fetch Expenses Response to include pagination details
+interface FetchExpensesResponse extends ApiResponse {
+    data: {
+        expenses: ExpenseResponseItem[];
+        total: number;
+        currentPage: number;
+        totalPages: number;
+        pageSize: number;
+    };
+}
+
+interface FetchExpensesResponseData {
+    expenses: ExpenseResponseItem[];
+    total: number;
+    currentPage: number;
+    totalPages: number;
+    pageSize: number;
+}
+
+interface UpsertExpenseResponse extends ApiResponse {
+    data: ExpenseResponseItem;
+}
+
+// Define an Expense List Item type if necessary for list components
+interface ExpenseListItem {
+    id: string;
+    category: Category;
+    amount: number;
+    description?: string;
+    date: string;
+    addedBy: string;
+    paymentMethod: PaymentMethod;
+    group: Group;
+    createdAt: string;
+    updatedAt: string;
+}
+
+// Interfaces for creating and updating expenses
+interface CreateExpense {
+    amount: number;
+    categoryId: string;
+    paymentMethodId: string;
+    groupId: string;
+    description?: string;
+    date: string;
+    authorId: string;
+}
+
+interface UpdateExpense {
+    id: string;
+    amount?: number;
+    categoryId?: string;
+    paymentMethodId?: string;
+    groupId?: string;
+    description?: string;
+    date: string;
+    authorId: string;
+}
+
+interface UpdateExpensePayload {
+    expenseId: string;
+    data: UpdateExpense;
+}
+
+// Updated Expense State to support paginated data
+interface ExpenseState {
+    expenses: ExpenseResponseItem[];
+    total: number;
+    currentPage: number;
+    totalPages: number;
+    pageSize: number;
+    categories: Category[];
+    paymentMethods: PaymentMethod[];
+    groups: Group[];
+    loading: boolean;
+    error?: string | null;
 }
